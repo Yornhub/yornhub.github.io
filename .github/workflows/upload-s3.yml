@@ -4,9 +4,9 @@ name: upload to s3 bucket
 on: 
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:   # <-- Add this to allow manual triggering
-  
+
 env:
   BUCKET_NAME: "mychirpy"
   AWS_REGION: "ap-southeast-1"
