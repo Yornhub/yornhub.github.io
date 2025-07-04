@@ -26,6 +26,11 @@ jobs:
           role-to-assume: arn:aws:iam::133605102918:role/GitHubOIDC-S3Deploy # This is the IAM role that GitHub Actions will assume to get temporary credentials for AWS.
           role-session-name: github-actions-${{ github.run_id }} # This is a built-in GitHub Actions context variable that’s automatically available during every workflow run. It’s generated fresh for each run and provides a unique identifier for that run, which can be useful for tracking purposes.
           aws-region: ${{ env.AWS_REGION }}
+      - name: Debug OIDC token
+        run: |
+          echo "OIDC token:"
+          echo $ACTIONS_ID_TOKEN_REQUEST_TOKEN
+      
       # Upload a file to AWS s3
       - name: Copy index.html to s3
         run: |
