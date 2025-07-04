@@ -1,7 +1,12 @@
 # This workflow uploads a file to an AWS S3 bucket using a role to assume.
 # AWS recommends using IAM roles instead of ${{USER.ACCESS.KEYS}}.
 name: upload to s3 bucket
-on: push
+on: 
+  push:
+    branches:
+      - main
+  workflow_dispatch:   # <-- Add this to allow manual triggering
+  
 env:
   BUCKET_NAME: "mychirpy"
   AWS_REGION: "ap-southeast-1"
@@ -18,7 +23,7 @@ jobs:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # Git commits have SHA. This SHA string tells Github which version(commit) of the action to use.
         with:
-          role-to-assume: arn:aws:iam::133605102918:role/GitHubOIDC-S3Deploy
+          role-to-assume: arn:aws:iam::133605102918:role/GitHubOIDC-S3Deploy # This is the IAM role that GitHub Actions will assume to get temporary credentials for AWS.
           role-session-name: github-actions-${{ github.run_id }} # This is a built-in GitHub Actions context variable that’s automatically available during every workflow run. It’s generated fresh for each run and provides a unique identifier for that run, which can be useful for tracking purposes.
           aws-region: ${{ env.AWS_REGION }}
       # Upload a file to AWS s3
