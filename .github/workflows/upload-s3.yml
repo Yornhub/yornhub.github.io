@@ -21,6 +21,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
+      # - name: Setup Pages
+      #   id: pages
+      #   uses: actions/configure-pages@v4
+
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -31,16 +35,25 @@ jobs:
         run: |
           bundle install
           bundle exec jekyll build
+      
+      # configured with chirpy's default Gemfile
+      - name: Test site
+        run: |
+          bundle exec htmlproofer _site \
+            \-\-disable-external \
+            \-\-ignore-urls "/^http:\/\/127.0.0.1/,/^http:\/\/0.0.0.0/,/^http:\/\/localhost/"
+    
+      - name: Upload site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # path: "_site${{ steps.pages.outputs.base_path }}"
+          name: site
+          path: _site
 
   authenticate:
     needs: build-site
     runs-on: ubuntu-latest
     steps:
-      - name: Download site artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: site
-
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v3
         with:
@@ -54,6 +67,12 @@ jobs:
     needs: authenticate
     runs-on: ubuntu-latest
     steps:
+      - name: Download _site artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: site
+          path: _site
+
       - name: Copy site to S3
         run: |
           ls -la _site/index.html
