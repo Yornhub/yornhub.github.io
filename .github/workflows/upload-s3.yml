@@ -31,12 +31,6 @@ jobs:
         run: |
           bundle install
           bundle exec jekyll build
-      
-      - name: Upload _site as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: site
-          path: _site
 
   authenticate:
     needs: build-site
