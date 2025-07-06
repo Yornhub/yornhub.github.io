@@ -1,0 +1,37 @@
+# This workflow 
+# AWS recommends using IAM roles instead of ${{USER.ACCESS.KEYS}}.
+name: get caller identity
+
+# Disabled.
+# on:
+#   push:
+#     branches:
+#       - master
+#   workflow_dispatch: # <-- Add this to allow manual triggering
+
+env:
+  BUCKET_NAME: "mychirpy"
+  AWS_REGION: "ap-southeast-1"
+# permission can be added at job level or workflow level
+
+jobs:
+  get-caller-identity:
+    # This job is used to get the caller identity of the AWS role that GitHub Actions will assume.
+    name: Get Caller Identity
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # This is required for requesting the JWT
+      contents: read # This is required for actions/checkout
+    steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # Git commits have SHA. This SHA string tells Github which version(commit) of the action to use.
+        with:
+          role-to-assume: arn:aws:iam::133605102918:role/GitHubOIDC-S3Deploy # This is the IAM role that GitHub Actions will assume to get temporary credentials for AWS.         aws-region: ${{ env.AWS_REGION }}
+      - name: fetch the caller identity
+        run: |
+          aws sts get-caller-identity
+
+      - name: Debug OIDC token
+        run: |
+          echo "OIDC token:"
+          echo $ACTIONS_ID_TOKEN_REQUEST_TOKEN
