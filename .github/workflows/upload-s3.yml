@@ -51,7 +51,7 @@ jobs:
           path: _site
 
   deploy-to-s3:
-    needs: authenticate
+    needs: build-site
     runs-on: ubuntu-latest
     steps:
       - name: Download _site artifact
