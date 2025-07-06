@@ -1,57 +1,68 @@
-# This workflow uploads a file to an AWS S3 bucket using a role to assume.
-# AWS recommends using IAM roles instead of ${{USER.ACCESS.KEYS}}.
 name: upload to s3 bucket
+
 on:
   push:
     branches:
       - master
-  workflow_dispatch: # <-- Add this to allow manual triggering
+  workflow_dispatch:
 
 env:
   BUCKET_NAME: "mychirpy"
   AWS_REGION: "ap-southeast-1"
-  
-# permission can be added at job level or workflow level
-permissions:
-  id-token: write # This is required for requesting the JWT
-  contents: read # This is required for actions/checkout
 
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  deploy-site:
-    name: Deploy to S3 Bucket
+  build-site:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout # Git clone the repository
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v3 # Git commits have SHA. This SHA string tells Github which version(commit) of the action to use.
-        with:
-          role-to-assume: arn:aws:iam::133605102918:role/GithubOIDC-S3 # This is the IAM role that GitHub Actions will assume to get temporary credentials for AWS.
-          # role-session-name: github-actions-${{ github.run_id }} # This is a built-in GitHub Actions context variable that’s automatically available during every workflow run. It’s generated fresh for each run and provides a unique identifier for that run, which can be useful for tracking purposes.
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Fetch the caller identity
-        run: aws sts get-caller-identity
-
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v4
-
+      
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3
           bundler-cache: true
-
-      - name: Build the site & install dependencies
+      
+      - name: Install dependencies & build the site
         run: |
           bundle install
           bundle exec jekyll build
+      
+      - name: Upload _site as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: site
+          path: _site
 
+  authenticate:
+    needs: build-site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download site artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: site
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::133605102918:role/GithubOIDC-S3
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Fetch caller identity 
+        run: aws sts get-caller-identity
+
+  deploy-to-s3:
+    needs: authenticate
+    runs-on: ubuntu-latest
+    steps:
       - name: Copy site to S3
         run: |
           ls -la _site/index.html
           aws s3 cp ./_site/index.html s3://${{ env.BUCKET_NAME }}/index.html
+        # Uncomment the next line to upload the full site
+          # aws s3 sync ./_site s3://${{ env.BUCKET_NAME }} --delete 
